@@ -63,26 +63,46 @@ Berikut adalah beberapa temuan dari analisis eksplorasi data:
    - Apel berkualitas buruk cenderung memiliki tingkat keempukan (Juiciness) yang lebih tinggi
 
 ## Data Preparation
-Pada dataset yang digunakan pada proyek ini, data sudah clean tanpa ada missing values.
-Data preparation yang kita lakukan ini hanya mengubah variabel target 'Quality' dari kategorikal (good/bad) menjadi numerik (1/0) serta membagi datatest sebanyak 1:4 yatu 80% data train, 20% data test. Pembagian proporsi ini umum dilakukan untuk mengukur kinerja data baru yang masuk. 
-Selain itu, tahap persiapan data yang kita lakukan adalah standarisasi data dengan menggunakan metode StandarScaler. Prinsipnya adalah standarisasi fitur dengan mengurangkan mean (nilai rata-rata) kemudian membaginya dengan standar deviasi untuk menggeser distribusi. Metode ini membantu mengurangi variasi dalam data dan meningkatkan performa model.
+Beberapa teknik data preparation yang diterapkan pada dataset ini:
+1. Penghapusan Kolom yang Tidak Dibutuhkan :
+   Menghapus kolom 'A_id' karena hanya berfungsi sebagai identifier dan tidak memberikan informasi yang berguna untuk prediksi kualitas apel.
+2. Encoding Variabel Target : 
+   Mengubah variabel target 'Quality' dari kategorikal menjadi numerik (0 untuk 'bad' dan 1 untuk 'good').
+3. Pembagian Dataset :
+   Dataset dibagi menjadi dua bagian: training set (80%) dan testing set (20%).
+4. Standarisasi Data :
+   Menggunakan StandardScaler untuk menormalisasi fitur numerik agar memiliki rata-rata 0 dan standar deviasi 1.
 
 ## Modeling
-Model yang dirancang untuk menyelesaikan masalah ini dengan algoritma Random Forest. Model ini dipilih karena menggunakan multiple decision trees untuk menghasilkan prediksi yang lebih akurat dan stabil.
-Dengan Random Forest, maka akan ada klasifikasi hyperlane yang memisahkan antara kategori anggur Good / Bad.\
-Pada uji coba kali ini, model dioptimasi juga dengan metode [GridSearchCV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html). Tujuan optimasi ini untuk menentukan Hyperparameter pada model Random Forest. GridSearchCV mengambil parameter yang sudah didefinisikan untuk dicoba pada model untuk tahap data training. Dengan hyperparameter yang optimal maka hasil akurasi akan meningkat juga. Uji coba kali ini, parameter yg akan ditentukan hyperparameternya adalah n_estimators, max_depth, min_samples_split, dan min_sample_leaf (merujuk pada parameter yang sesuai basic dokumentasi [berikut](https://scikit-learn.org/stable/modules/grid_search.html)
+Pada proyek ini, algoritma Random Forest Classifier digunakan untuk memprediksi kualitas apel. Berikut adalah penjelasan tahapan dan parameter yang digunakan dalam proses pemodelan:
 
-## Evaluation
-Kelebihan Random Forest:
-- Mampu menangani data numerik dengan baik
-- Tahan terhadap overfitting
-- Dapat menangani dataset dengan banyak fitur
-- Memberikan informasi tentang feature importance
+**Cara Kerja Random Forest Classifier:**
+Random Forest adalah algoritma ensemble yang bekerja dengan cara:
+1. Membuat Multiple Decision Trees : Algoritma ini membangun banyak pohon keputusan (decision trees) secara paralel.
+2. Random Sampling : Setiap pohon dilatih menggunakan sampel acak dari data training dengan penggantian (bootstrap sampling).
+3. Random Feature Selection : Pada setiap node pohon, hanya subset acak dari fitur yang dipertimbangkan untuk pemisahan.
+4. Voting Majority : Untuk klasifikasi, hasil akhir ditentukan berdasarkan voting mayoritas dari semua pohon.
 
-Kekurangan Random Forest:
-- Komputasi yang lebih berat dibandingkan model yang lebih sederhana
-- Kurang interpretable dibandingkan decision tree tunggal
-- Memerlukan tuning hyperparameter untuk performa optimal
+**Parameter yang Digunakan:**
+- n_estimators: Jumlah pohon dalam Random Forest.
+- max_depth: Maksimum kedalaman pohon.
+- min_samples_split: Jumlah sampel minimum yang dibutuhkan untuk membagi node.
+- min_samples_leaf: Jumlah sampel minimum yang diperlukan pada node terminal.
+
+**Proses Hyperparameter Tuning:**
+GridSearchCV digunakan untuk mencari kombinasi hyperparameter terbaik. Proses ini mencoba semua kombinasi hyperparameter yang ditentukan dalam grid dan memilih kombinasi yang memberikan performa terbaik berdasarkan metrik evaluasi yang ditentukan (misalnya, akurasi).
+1. Definisikan Grid Parameter:
+   Grid parameter adalah kombinasi hyperparameter yang akan dicoba oleh GridSearchCV. Berikut merupakan parameter yang akan dicoba:
+   param_grid = {
+    'n_estimators': [50, 100, 200],
+    'max_depth': [None, 10, 20, 30],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4]
+  }
+2. Cross-Validation:
+   Cross-validation digunakan untuk mengevaluasi performa model dengan membagi data menjadi beberapa subset (fold). Menggunakan 5-fold cross-validation untuk mengevaluasi setiap kombinasi parameter.
+3. Model Terbaik:
+   Memilih kombinasi parameter yang menghasilkan akurasi tertinggi.
 
 Hasil hyperparameter tuning menunjukkan parameter terbaik untuk Random Forest adalah:
 - n_estimators: 100
@@ -90,22 +110,32 @@ Hasil hyperparameter tuning menunjukkan parameter terbaik untuk Random Forest ad
 - min_samples_split: 5
 - min_samples_leaf: 1
 
+## Evaluation
 Berikut adalah hasil evaluasi model Random Forest yang terpilih:
-- Accuracy: 90% Artinya, 90% dari seluruh prediksi model adalah benar.
+
+- Accuracy
+  - Definisi: Persentase prediksi yang benar dari total prediksi
+  - Formula: (TP + TN) / (TP + TN + FP + FN)
+  - Nilai: 90%
+  Artinya, model berhasil memprediksi 90% dari total sampel dengan benar.
+
 - Precision:
+  - Formula: TP / (TP + FP)
   - Kelas 'bad': 90%
   - Kelas 'good': 89%
   Artinya, dari semua apel yang diprediksi berkualitas buruk, 90% benar-benar berkualitas buruk. Dan dari semua apel yang diprediksi berkualitas baik, 89% benar-benar berkualitas baik.
 
 - Recall:
+  - Formula: TP / (TP + FN)
   - Kelas 'bad': 89%
   - Kelas 'good': 90%
   Artinya, dari semua apel yang sebenarnya berkualitas buruk, 89% berhasil diidentifikasi dengan benar. Dan dari semua apel yang sebenarnya berkualitas baik, 90% berhasil diidentifikasi dengan benar.
 
 - F1-Score:
+  - Formula: 2 * (Precision * Recall) / (Precision + Recall)
   - Kelas 'bad': 90%
   - Kelas 'good': 90%
-  F1-Score memberikan keseimbangan antara precision dan recall.
+  F1-Score memberikan keseimbangan antara precision dan recall, dan nilai 90% untuk kedua kelas menunjukkan model memiliki keseimbangan yang baik.
 
 Confusion matrix memberikan gambaran visual tentang performa model:
 [[ 358   43 ]
@@ -113,7 +143,7 @@ Confusion matrix memberikan gambaran visual tentang performa model:
 - 358 apel berkualitas buruk diprediksi dengan benar (True Negative)
 - 359 apel berkualitas baik diprediksi dengan benar (True Positive)
 - 43 apel berkualitas buruk diprediksi salah sebagai baik (False Positive)
-- 48 apel berkualitas baik diprediksi salah sebagai buruk (False Negative)
+- 40 apel berkualitas baik diprediksi salah sebagai buruk (False Negative)
 
 ## Feature Importance
  Analisis feature importance dari model Random Forest menunjukkan kontribusi relatif setiap fitur:
